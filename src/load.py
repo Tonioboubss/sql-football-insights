@@ -14,6 +14,7 @@ from config import COMPETITIONS
 RAW_DIR = Path(__file__).parent.parent / "data" / "raw"
 DB_PATH = Path(__file__).parent.parent / "football.db"
 SCHEMA_PATH = Path(__file__).parent.parent / "schema.sql"
+VIEWS_PATH = Path(__file__).parent.parent / "sql" / "views.sql"
 
 
 def get_connection() -> sqlite3.Connection:
@@ -21,6 +22,7 @@ def get_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA foreign_keys = ON")  # SQLite ignores FK constraints unless told to enforce them
     conn.executescript(SCHEMA_PATH.read_text())
+    conn.executescript(VIEWS_PATH.read_text())
     return conn
 
 
@@ -128,6 +130,8 @@ def main() -> None:
     load_teams(conn)
     load_team_competitions(conn)
     load_matches(conn)
+
+    
     conn.close()
 
 if __name__ == "__main__":
