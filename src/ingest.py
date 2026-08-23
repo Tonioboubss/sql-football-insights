@@ -55,20 +55,10 @@ def main() -> None:
         fetch_and_cache(session, f"{BASE_URL}/competitions/{code}", RAW_DIR / f"{code}_competition.json")
         time.sleep(REQUEST_DELAY_SECONDS)
 
-        fetch_and_cache(
-            session,
-            f"{BASE_URL}/competitions/{code}/teams",
-            RAW_DIR / f"{code}_teams.json",
-            params={"season": SEASON},
-        )
+        fetch_and_cache(session,f"{BASE_URL}/competitions/{code}/teams",RAW_DIR / f"{code}_teams.json",params={"season": SEASON},)
         time.sleep(REQUEST_DELAY_SECONDS)
 
-        fetch_and_cache(
-            session,
-            f"{BASE_URL}/competitions/{code}/matches",
-            RAW_DIR / f"{code}_matches.json",
-            params={"season": SEASON},
-        )
+        fetch_and_cache(session,f"{BASE_URL}/competitions/{code}/matches",RAW_DIR / f"{code}_matches.json",params={"season": SEASON},)
         time.sleep(REQUEST_DELAY_SECONDS)
 
 

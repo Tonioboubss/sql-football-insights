@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS matches (
     home_team_id INTEGER NOT NULL REFERENCES teams(id),
     away_team_id INTEGER NOT NULL REFERENCES teams(id),
     match_date TEXT NOT NULL,       -- utcDate ISO 8601 from the API
-    matchday INTEGER,                -- filled for league / group stage
-    stage TEXT,                      -- filled for knockout rounds
+    stage TEXT NOT NULL,   -- always populated: REGULAR_SEASON, LEAGUE_STAGE, LAST_16, FINAL...
+    matchday INTEGER,      -- populated for league rounds and lég number in two-legged ties; NULL for single-match rounds (e.g. FINAL)
     status TEXT NOT NULL CHECK (status IN (
         'SCHEDULED','TIMED','IN_PLAY','PAUSED','EXTRA_TIME',
         'PENALTY_SHOOTOUT','FINISHED','SUSPENDED','POSTPONED',
