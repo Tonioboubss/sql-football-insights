@@ -1,0 +1,13 @@
+# Environment & secrets — never commit API keys or tokens
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Generated database — rebuilt from schema.sql + load.py, not source of truth
+*.db
+
+# Raw cached API responses — regenerable via ingest.py, would bloat the repo
+data/raw/
