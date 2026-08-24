@@ -1,44 +1,27 @@
-"""Tests for our interaction with the football-data.org API.
-
-Note: these tests call the real API. In a larger codebase we would mock
-these HTTP calls to keep tests fast and independent of network/rate
-limits -- kept live here given the project's scope.
-"""
-
-import requests
-
-from src.config import API_TOKEN, BASE_URL, COMPETITIONS, SEASON
+"""Data quality checks on the loaded database -- these should always
+hold true regardless of which season/competitions we load."""
 
 
-def test_token_is_valid_and_competition_codes_exist():
-    """Our token must work, and our 3 target competition codes must
-    still exist in the API's competition list."""
-    response = requests.get(f"{BASE_URL}/competitions", headers={"X-Auth-Token": API_TOKEN})
-    assert response.status_code == 200
-
-    available_codes = {c["code"] for c in response.json()["competitions"]}
-    for code in COMPETITIONS:
-        assert code in available_codes
+def test_no_finished_match_has_a_missing_score(conn):
+    """A FINISHED match without a score would indicate a parsing bug."""
+    rows = conn.execute(
+        "SELECT id FROM matches WHERE status = 'FINISHED' AND (home_score IS NULL OR away_score IS NULL)"
+    ).fetchall()
+    assert rows == []
 
 
-def test_invalid_token_is_rejected():
-    """A bad token must fail clearly, not silently succeed."""
-    response = requests.get(
-        f"{BASE_URL}/competitions/PL",
-        headers={"X-Auth-Token": "invalid_token_on_purpose"},
-    )
-    assert response.status_code in (400, 401, 403)
+def test_no_team_plays_itself(conn):
+    """The schema's CHECK constraint should already prevent this --
+    verify it actually holds in the loaded data."""
+    rows = conn.execute("SELECT id FROM matches WHERE home_team_id = away_team_id").fetchall()
+    assert rows == []
 
 
-def test_target_season_is_fully_completed():
-    """The 2025-26 season we've chosen must be entirely played out --
-    otherwise our analysis would be built on an incomplete dataset."""
-    response = requests.get(
-        f"{BASE_URL}/competitions/PL/matches",
-        headers={"X-Auth-Token": API_TOKEN},
-        params={"season": SEASON},
-    )
-    assert response.status_code == 200
-
-    result_set = response.json()["resultSet"]
-    assert result_set["played"] == result_set["count"]
+def test_match_count_per_competition_sums_to_the_total(conn):
+    """Sanity check: matches grouped by competition must sum back to
+    the overall total -- catches a broken competition_id somewhere."""
+    total = conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
+    summed = conn.execute(
+        "SELECT SUM(cnt) FROM (SELECT COUNT(*) AS cnt FROM matches GROUP BY competition_id)"
+    ).fetchone()[0]
+    assert total == summed
