@@ -212,3 +212,42 @@ SELECT
     ) / 4.0 AS schedule_difficulty_index
 FROM team_opponent_factors t
 CROSS JOIN bounds b;
+
+DROP VIEW IF EXISTS team_schedule_difficulty;
+CREATE VIEW team_schedule_difficulty AS
+WITH bounds AS (
+    SELECT
+        MIN(opponent_recent_form) AS min_form, MAX(opponent_recent_form) AS max_form,
+        MIN(opponent_standing) AS min_standing, MAX(opponent_standing) AS max_standing,
+        MIN(opponent_venue_form) AS min_venue, MAX(opponent_venue_form) AS max_venue,
+        MIN(opponent_rest_days) AS min_rest, MAX(opponent_rest_days) AS max_rest
+    FROM team_opponent_factors
+),
+normalized AS (
+    SELECT
+        t.team_id,
+        t.opponent_team_id,
+        t.competition_id,
+        t.match_date,
+        t.venue,
+        (t.opponent_recent_form - b.min_form) / NULLIF(b.max_form - b.min_form, 0) AS normalized_recent_form,
+        (t.opponent_standing - b.min_standing) / NULLIF(b.max_standing - b.min_standing, 0) AS normalized_standing,
+        (t.opponent_venue_form - b.min_venue) / NULLIF(b.max_venue - b.min_venue, 0) AS normalized_venue_form,
+        (t.opponent_rest_days - b.min_rest) / NULLIF(b.max_rest - b.min_rest, 0) AS normalized_rest_days
+    FROM team_opponent_factors t
+    CROSS JOIN bounds b
+)
+SELECT
+    team_id,
+    opponent_team_id,
+    competition_id,
+    match_date,
+    venue,
+    normalized_recent_form,
+    normalized_standing,
+    normalized_venue_form,
+    normalized_rest_days,
+    (
+        normalized_recent_form + normalized_standing + normalized_venue_form + normalized_rest_days
+    ) / 4.0 AS schedule_difficulty_index
+FROM normalized;
